@@ -9,7 +9,7 @@ use DateTime;
  *
  * @package Live\Collection
  */
-class MemoryCollection implements CollectionInterface
+class FileCollection extends MemoryCollection implements CollectionInterface
 {
     /**
      * Collection data
@@ -17,6 +17,13 @@ class MemoryCollection implements CollectionInterface
      * @var array
      */
     protected $data;
+	
+    /**
+     * File name, do not use the extension
+     *
+     * @var string
+     */
+    protected $fileName;
 	
 	/**
      * Collection time
@@ -29,11 +36,13 @@ class MemoryCollection implements CollectionInterface
     /**
      * Constructor
      * initialize class with empty collection
+     * @param string $file
      */
-    public function __construct()
+    public function __construct(string $file)
     {
         $this->data = [];
-        $this->expirationTime = [];
+		$this->expirationTime = [];
+        $this->fileName = __DIR__ . '/' . $file . '.txt';
     }
 
     /**
@@ -47,7 +56,7 @@ class MemoryCollection implements CollectionInterface
         if (!$this->has($index)) {
             return $defaultValue;
         }
-
+        $this->data = json_decode(file_get_contents($this->fileName), true);
         return $this->data[$index];
     }
 
@@ -66,11 +75,14 @@ class MemoryCollection implements CollectionInterface
 		}
         $this->data[$index] = $value;
 		$this->expirationTime[$index] = $expirationTime;
+		
+        $fp = fopen($this->fileName, 'w');
+        fwrite($fp, json_encode($this->data));
+        fclose($fp);
     }
 
     /**
      * Checks whether the collection has th given index
-     * checks if the expiration date is greater than the current one
      * @param string $index
      * @return bool
      */
@@ -90,11 +102,12 @@ class MemoryCollection implements CollectionInterface
     }
 
     /**
-     * clean the collection
+     * clean the collection and remove file
      * return void
      */
     public function clean()
     {
         $this->data = [];
+        unlink($this->fileName);
     }
 }
